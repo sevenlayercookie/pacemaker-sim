@@ -1,6 +1,6 @@
 # ECG telemetry simulator with interactive pacemaker
 
-[sevenlayercookie.github.io/EKG-Coding](sevenlayercookie.github.io/EKG-Coding)
+[sevenlayercookie.github.io/pacemaker-sim](https://sevenlayercookie.github.io/pacemaker-sim)
 
 # # Two parts
 

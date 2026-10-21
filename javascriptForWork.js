@@ -1957,7 +1957,7 @@ var pacemakerWidth = pacemakerCanvas.width = document.getElementById("pacemakerD
 
 var pacemakerCtx = pacemakerCanvas.getContext("2d");
 var pacemakerImg = new Image();
-pacemakerImg.src = "https://sevenlayercookie.github.io/EKG-Coding/assets/pacemaker.svg";
+pacemakerImg.src = "https://sevenlayercookie.github.io/pacemaker-sim/assets/pacemaker.svg";
 pacemakerImg.onload = function() {
   drawPacemaker()
 };
