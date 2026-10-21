@@ -20,8 +20,13 @@ function setup() {
     PVARP: 300, PVARPDefault: 300, PVARPmin: 150, PVARPmax: 500,
     upperRateLimit: 110, upperRateLimitDefault: 110, URLmin: 80, URLmax: 230,
     RAPrate: 250, RAPrateDefault: 250, RAPrateMin: 80, RAPrateMax: 800,
+    pacingRate: 80, meanRatePacer: 60, HRadjustedAV: 170,
+    makeItEven: value => Math.round(value / 2) * 2,
     updateAllGUIValues() {},
   });
+  const parameterStart = source.indexOf('function makeParameterValues');
+  const parameterEnd = source.indexOf('////////////////////////////////////////////////////////////////////////', parameterStart);
+  vm.runInContext(source.slice(parameterStart, parameterEnd), context);
   for (const [start, end] of [
     ['function calcKnobParams(', '// Harrison Knob'],
     ['function knobAngleToResult(', '// initialze knob parameters'],
@@ -37,6 +42,12 @@ function setup() {
     context.knobAngleToResult({}, dial);
   }
   return { context, dial, move };
+}
+
+function loadRateDependentSettingsHelpers(context) {
+  const start = source.indexOf('function applyAutomaticRateDependentSettings');
+  const end = source.indexOf('function updateVariablesFromGUI', start);
+  vm.runInContext(source.slice(start, end), context);
 }
 
 test('switching from a heavily rotated row preserves every new row on grab', () => {
@@ -66,7 +77,7 @@ test('new grabs use the current value even after an automatic value change', () 
   move(350, true);
   assert.equal(c.aPacerSensitivity, 3);
   move(5);
-  assert.ok(Math.abs(c.aPacerSensitivity - (3 - 15 / 108)) < 1e-9);
+  assert.equal(c.aPacerSensitivity, 3);
 });
 
 test('small adjustments accumulate for rounded AV intervals', () => {
@@ -97,4 +108,49 @@ test('limits and locked/off controls retain their behavior', () => {
   c.pacerOn = false;
   move(60);
   assert.equal(c.aPacerSensitivity, before);
+});
+
+test('manual ranges and nonuniform increments are represented by the dial detents', () => {
+  const { context: c } = setup();
+  const values = JSON.parse(vm.runInContext('JSON.stringify(pacemakerParameterValues)', c));
+  assert.deepEqual(values.rate.slice(0, 7), [30, 35, 40, 45, 50, 52, 54]);
+  assert.deepEqual(values.rate.slice(-5), [176, 182, 188, 194, 200]);
+  assert.deepEqual(values.rapidAtrialRate.slice(0, 8), [80, 100, 120, 140, 160, 180, 185, 190]);
+  assert.deepEqual(values.atrialOutput.slice(0, 11), [0, .1, .2, .3, .4, .6, .8, 1, 1.5, 2, 2.5]);
+  assert.deepEqual(values.atrialSensitivity.slice(0, 12), [.4, .5, .6, .7, .8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5]);
+  assert.deepEqual(values.ventricularSensitivity.slice(-6), [10, 12, 14, 16, 18, 20]);
+  assert.deepEqual(values.upperRate.slice(-5), [200, 207, 214, 222, 230]);
+});
+
+test('automatic values that are between manual detents do not jump on pickup', () => {
+  const { context: c, dial, move } = setup();
+  c.selectedOption = 'URLrow';
+  c.upperRateLimit = 112; // RATE + 30 can be between manual Upper Rate detents.
+  c.getBottomDialParameters(true);
+  move(270, true);
+  assert.equal(c.upperRateLimit, 112);
+});
+
+test('switching automatic settings to manual keeps the current automatic values', () => {
+  const { context: c } = setup();
+  loadRateDependentSettingsHelpers(c);
+  c.pacingRate = 130;
+  c.AVInterval = 120;
+  c.upperRateLimit = 220;
+  c.PVARP = 180;
+  c.manAVI = c.manURL = c.manPVARP = true;
+
+  c.setRateDependentSettingsMode(false);
+  assert.equal(c.AVInterval, 80);
+  assert.equal(c.upperRateLimit, 160);
+  assert.equal(c.PVARP, 250);
+
+  c.setRateDependentSettingsMode(true);
+
+  assert.equal(c.AVInterval, 80);
+  assert.equal(c.upperRateLimit, 160);
+  assert.equal(c.PVARP, 250);
+  assert.equal(c.manAVI, true);
+  assert.equal(c.manURL, true);
+  assert.equal(c.manPVARP, true);
 });

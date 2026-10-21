@@ -172,14 +172,14 @@ var pacingRate = pacingRateDefault = 80 // default
 var minPaceRate = 30
 var maxPaceRate = 200
 var AVInterval = AVIntervalDefault = 170; // pacemaker interval between atrial and v pace
-var aPacerSensitivity = aPacerSensitivityDefault = document.getElementById("aSensitivityBox").value = 0.5; // default
+var aPacerSensitivity = aPacerSensitivityDefault = Number(document.getElementById("aSensitivityBox").value = 0.5); // default
 var aPacerMaxSensitivity = 0.4
 var aPacerMinSensitivity = 10
-var vPacerSensitivity = vPacerSensitivityDefault = document.getElementById("vSensitivityBox").value = 2; // default
+var vPacerSensitivity = vPacerSensitivityDefault = Number(document.getElementById("vSensitivityBox").value = 2); // default
 var vPacerMaxSensitivity = 0.8
 var vPacerMinSensitivity = 20
-var aPacerOutput = aPacerOutputDefault = document.getElementById("aOutputBox").value = 10;
-var vPacerOutput = vPacerOutputDefault = document.getElementById("vOutputBox").value = 10;
+var aPacerOutput = aPacerOutputDefault = Number(document.getElementById("aOutputBox").value = 10);
+var vPacerOutput = vPacerOutputDefault = Number(document.getElementById("vOutputBox").value = 10);
 var aPacerMaxOutput = 20
 var vPacerMaxOutput = 25
 var AVImax = 300
@@ -220,6 +220,43 @@ var feedbackLevel = 'lowFeedback'
 var knobTurnFactor = 1 / 36 // how fast does the dial change the value (e.g 1/36 = 36 degrees to 1 bpm, one rotation = 10 bpm)
 var dialToRateB
 var rotationToHR = dialToRateB = pacingRate
+
+// The 5392 technical manual (Table 3, pp. 81-82) uses stepped ranges rather
+// than one uniform increment. Keep the valid detents in one place so every
+// dial follows the same limits and increments as the device.
+function makeParameterValues(min, max, incrementAtValue) {
+  const values = [min];
+  while (values[values.length - 1] < max) {
+    const current = values[values.length - 1];
+    const next = Math.min(max, current + incrementAtValue(current));
+    values.push(Number(next.toFixed(4)));
+  }
+  return values;
+}
+
+const pacemakerParameterValues = {
+  rate: makeParameterValues(30, 200, value => value < 50 ? 5 : value < 100 ? 2 : value < 170 ? 5 : 6),
+  rapidAtrialRate: makeParameterValues(80, 800, value => value < 180 ? 20 : value < 250 ? 5 : value < 360 ? 10 : 20),
+  atrialOutput: makeParameterValues(0, 20, value => value < 0.4 ? 0.1 : value < 1 ? 0.2 : value < 5 ? 0.5 : 1),
+  ventricularOutput: makeParameterValues(0, 25, value => value < 0.4 ? 0.1 : value < 1 ? 0.2 : value < 5 ? 0.5 : 1),
+  atrialSensitivity: makeParameterValues(0.4, 10, value => value < 0.8 ? 0.1 : value < 2 ? 0.2 : value < 3 ? 0.5 : 1),
+  ventricularSensitivity: makeParameterValues(0.8, 20, value => value < 1 ? 0.2 : value < 3 ? 0.5 : value < 10 ? 1 : 2),
+  avInterval: makeParameterValues(20, 300, () => 10),
+  pvarp: makeParameterValues(150, 500, () => 10),
+  upperRate: makeParameterValues(80, 230, value => value < 100 ? 2 : value < 170 ? 5 : value < 200 ? 6 : value < 214 ? 7 : 8)
+};
+
+function snapKnobValue(knobImage, value) {
+  const values = knobImage.stepValues;
+  if (!values || !values.length) return value;
+  const bounded = Math.max(values[0], Math.min(values[values.length - 1], value));
+  return values.reduce((closest, candidate) =>
+    Math.abs(candidate - bounded) < Math.abs(closest - bounded) ? candidate : closest, values[0]);
+}
+
+function snapParameterValue(values, value) {
+  return snapKnobValue({ stepValues: values }, Number(value));
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -472,8 +509,9 @@ function onload() {
   input.onchange = function () { setHR = input.value; HRchanged = true; };
   pacerate = document.getElementById('pacingRate');
   pacerate.onchange = function () {
-    //pacingRate=pacerate.value
-    document.getElementById("pacingBoxRate").innerText = pacerate.value;
+    pacingRate = snapParameterValue(pacemakerParameterValues.rate, pacerate.value);
+    document.getElementById("pacingBoxRate").innerText = pacingRate;
+    document.getElementById("pacingRate").value = pacingRate;
   };
 
 
@@ -2564,18 +2602,20 @@ function pacerCapturing(chamber) {
 }
 
 function onOutputChange(chamber) {
-
-  aPacerOutput = document.getElementById("aOutputBox").value;
+  aPacerOutput = snapParameterValue(pacemakerParameterValues.atrialOutput, document.getElementById("aOutputBox").value);
   document.getElementById("pacingBoxAOutput").innerText = aPacerOutput;
-  vPacerOutput = document.getElementById("vOutputBox").value;
+  vPacerOutput = snapParameterValue(pacemakerParameterValues.ventricularOutput, document.getElementById("vOutputBox").value);
   document.getElementById("pacingBoxVOutput").innerText = vPacerOutput;
   document.getElementById("pacingBoxMode").innerText = pacerMode;
 }
 
 function onParameterChange() {
-  //aPacerSensitivity = document.getElementById("aSensitivityBox").value;
-  //vPacerSensitivity = document.getElementById("vSensitivityBox").value;
-  AVInterval = makeItEven(parseInt(document.getElementById("AVInterval").value))
+  aPacerSensitivity = snapParameterValue(pacemakerParameterValues.atrialSensitivity, document.getElementById("aSensitivityBox").value);
+  vPacerSensitivity = snapParameterValue(pacemakerParameterValues.ventricularSensitivity, document.getElementById("vSensitivityBox").value);
+  AVInterval = snapParameterValue(pacemakerParameterValues.avInterval, document.getElementById("AVInterval").value)
+  if (document.getElementById("URLbox").value !== "") {
+    upperRateLimit = snapParameterValue(pacemakerParameterValues.upperRate, document.getElementById("URLbox").value);
+  }
 
   // update pacer display
   //document.getElementById("aSenseMeter").value = -10.4167*aPacerSensitivity + 104.17
@@ -2833,23 +2873,44 @@ function updateAllGUIValues() {
 }
 updateAllGUIValues()
 
-function setPacerAutomatic()
+function applyAutomaticRateDependentSettings()
 {
-  //e.lastElementChild.lastElementChild.innerHTML = 'Automatic'
-  manAVI = manURL = manPVARP = false;
+  // Keep the values that are shown in automatic mode in sync with the
+  // current rate. This also supplies the current automatic values when
+  // switching into manual mode.
+  HRadjustedAV = Math.round((300 - (1.67 * pacingRate)) / 10) * 10
+  if (HRadjustedAV < 50) { HRadjustedAV = 50 }
+  if (HRadjustedAV > 250) { HRadjustedAV = 250 }
   AVInterval = makeItEven(HRadjustedAV)
-  // URL
+
   upperRateLimit = pacingRate + 30
-    if (upperRateLimit < 110) { upperRateLimit = 110 }
-    document.getElementById("boxURL").innerText = upperRateLimit.toFixed(0) + " ppm"
-  // PVARP
+  if (upperRateLimit < 110) { upperRateLimit = 110 }
+
   let rate
   if (pacingRate >= meanRatePacer) { rate = pacingRate }
   else { rate = meanRatePacer }
   if (rate < 100) { PVARP = 300 }
   else if (rate < 150) { PVARP = 250 }
   else if (rate < 180) { PVARP = 230 }
-  else if (rate >= 180) { PVARP = 200 }
+  else { PVARP = 200 }
+}
+
+function setPacerAutomatic()
+{
+  manAVI = manURL = manPVARP = false;
+  applyAutomaticRateDependentSettings()
+}
+
+function setRateDependentSettingsMode(manual)
+{
+  if (manual) {
+    // Snapshot current automatic values; do not restore an older manual set.
+    applyAutomaticRateDependentSettings()
+    manAVI = manURL = manPVARP = true;
+  }
+  else {
+    setPacerAutomatic()
+  }
 }
 
 
@@ -3654,14 +3715,11 @@ function enterClick(event) {
         else if (e.id == "settings") {
           if (e.lastElementChild.lastElementChild.innerHTML == "Automatic") {
             e.lastElementChild.lastElementChild.innerHTML = 'Manual(*)'  // set all rate-dependent settings to manual
-            manAVI = manURL = manPVARP = true;
+            setRateDependentSettingsMode(true)
           }
           else if (e.lastElementChild.lastElementChild.innerHTML == "Manual(*)") {
             e.lastElementChild.lastElementChild.innerHTML = 'Automatic'
-            manAVI = manURL = manPVARP = false;
-            AVInterval = makeItEven(HRadjustedAV)
-            upperRateLimit = 110
-            PVARP = 300
+            setRateDependentSettingsMode(false)
           }
           break
         }
@@ -3781,6 +3839,12 @@ function knobClick(clickEvent) {
 
   getBottomDialParameters(true)
   var clickTarget = clickEvent.target
+
+  // Rebase upper-screen dials to the live parameter before the first drag
+  // sample, so a programmatic change cannot make the knob jump on pickup.
+  if (clickTarget.id == "rateDialImg") clickTarget.currentValue = pacingRate;
+  if (clickTarget.id == "aOutputDialImg") clickTarget.currentValue = aPacerOutput;
+  if (clickTarget.id == "vOutputDialImg") clickTarget.currentValue = vPacerOutput;
 
   document.getElementById('mainDiv').classList.add('grabbed')
   clickTarget.classList.add('grabbed')
@@ -3998,16 +4062,21 @@ function knobAngleToResult(event, knobImage)  // working here ***
     let result = knobImage.startValue + (knobImage.cumulativeDegrees * knobImage.turnFactor)
     let negresult = knobImage.startValue + (-knobImage.cumulativeDegrees * knobImage.turnFactor)
 
-    if (knobImage.reverseKnob) { knobImage.currentValue = result = negresult }
-    else { knobImage.currentValue = result }
+    if (knobImage.reverseKnob) { result = negresult }
+    // The first movement establishes the pointer's angle. Preserve the live
+    // value for that sample, then quantize subsequent movement to device detents.
+    if (!(knobImage.moveSteps == 1 && Number.isFinite(Number(knobImage.currentValue)))) {
+      result = snapKnobValue(knobImage, result);
+    }
+    knobImage.currentValue = result;
 
 
     if (knobImage.id == "rateDialImg") {
-      pacingRate = Math.round(result)
+      pacingRate = result
     }
 
     if (knobImage.id == "vOutputDialImg") {
-      vPacerOutput = Math.round(result)
+      vPacerOutput = result
       if (vPacerOutput <= 0 && ventPacedModes.includes(pacerMode)) { // if pacer drops to 0 and pacer is set to a v paced mode
         if (pacerMode == "DDD" || pacerMode == "DDI") {
           pacerMode = "AAI"
@@ -4045,7 +4114,7 @@ function knobAngleToResult(event, knobImage)  // working here ***
     }
 
     if (knobImage.id == "aOutputDialImg") {
-      aPacerOutput = Math.round(result)
+      aPacerOutput = result
       if (aPacerOutput <= 0 && atrialPacedModes.includes(pacerMode)) {
         if (pacerMode == "DDD" || pacerMode == "DDI") {
           pacerMode = "VVI"
@@ -4099,6 +4168,7 @@ elem.minValue = minPaceRate
 elem.startValue = pacingRate
 elem.maxValue = maxPaceRate
 elem.turnFactor = knobTurnFactor
+elem.stepValues = pacemakerParameterValues.rate
 
 
 // set vOutputDial parameters
@@ -4107,6 +4177,7 @@ elem.minValue = 0
 elem.startValue = vPacerOutput
 elem.maxValue = vPacerMaxOutput
 elem.turnFactor = knobTurnFactor
+elem.stepValues = pacemakerParameterValues.ventricularOutput
 
 
 // set aOutputDial parameters
@@ -4115,6 +4186,7 @@ elem.minValue = 0
 elem.startValue = aPacerOutput
 elem.maxValue = aPacerMaxOutput
 elem.turnFactor = knobTurnFactor
+elem.stepValues = pacemakerParameterValues.atrialOutput
 
 
 // add listeners
@@ -4136,6 +4208,7 @@ function getBottomDialParameters(startingDrag = false) {
     elem.maxValue = aPacerMinSensitivity
     elem.turnFactor = knobTurnFactor / 3
     elem.reverseKnob = true
+    elem.stepValues = pacemakerParameterValues.atrialSensitivity
     elem.currentValue = aPacerSensitivity
     elem.maxLock = false;
     elem.minLock = false;
@@ -4148,6 +4221,7 @@ function getBottomDialParameters(startingDrag = false) {
     elem.maxValue = vPacerMinSensitivity
     elem.turnFactor = knobTurnFactor / 2
     elem.reverseKnob = true
+    elem.stepValues = pacemakerParameterValues.ventricularSensitivity
     elem.currentValue = vPacerSensitivity
     elem.maxLock = false;
     elem.minLock = false;
@@ -4160,6 +4234,7 @@ function getBottomDialParameters(startingDrag = false) {
     elem.maxValue = AVImax
     elem.turnFactor = knobTurnFactor * 3
     elem.reverseKnob = false
+    elem.stepValues = pacemakerParameterValues.avInterval
     elem.currentValue = AVInterval
     elem.maxLock = false;
     elem.minLock = false;
@@ -4172,6 +4247,7 @@ function getBottomDialParameters(startingDrag = false) {
     elem.maxValue = PVARPmax
     elem.turnFactor = knobTurnFactor * 3
     elem.reverseKnob = false
+    elem.stepValues = pacemakerParameterValues.pvarp
     elem.currentValue = PVARP
     elem.maxLock = false;
     elem.minLock = false;
@@ -4184,6 +4260,7 @@ function getBottomDialParameters(startingDrag = false) {
     elem.maxValue = URLmax
     elem.turnFactor = knobTurnFactor * 3
     elem.reverseKnob = false
+    elem.stepValues = pacemakerParameterValues.upperRate
     elem.currentValue = upperRateLimit
     elem.maxLock = false;
     elem.minLock = false;
@@ -4196,6 +4273,7 @@ function getBottomDialParameters(startingDrag = false) {
     elem.maxValue = RAPrateMax
     elem.turnFactor = knobTurnFactor * 3
     elem.reverseKnob = false
+    elem.stepValues = pacemakerParameterValues.rapidAtrialRate
     elem.currentValue = RAPrate
     elem.maxLock = false;
     elem.minLock = false;
