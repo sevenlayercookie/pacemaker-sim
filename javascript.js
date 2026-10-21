@@ -342,6 +342,8 @@ function onload() {
   k = 0;
   teleCtx.strokeStyle = "#00bd00";
   teleCtx.lineWidth = 3;
+  teleCtx.lineJoin = "round";
+  teleCtx.lineCap = "round";
 
   // framelimiter code
   var fpsInterval, startTime, now, then, elapsed;
@@ -428,6 +430,7 @@ function onload() {
     //ctx.canvas.width  = window.innerWidth; // working on screen resizing
     l++; //count # of times through loop
     teleCtx.beginPath();
+    teleCtx.moveTo(opx, opy);
     //for (let z = 0; z < dataHertz / avgFPS; z++)
     // let y = dataHertz/avgFPS
 
@@ -438,7 +441,7 @@ function onload() {
       //if (paceSpike)
       //{drawPacingSpike();}
 
-      teleCtx.moveTo(opx, opy);
+      // Keep samples in one connected path so adjacent segments share a join.
       teleCtx.lineTo(px, py);
       opx = px;
       opy = py;
@@ -448,6 +451,8 @@ function onload() {
       if (opx > teleCanvas.width || opx > document.getElementById("canvasesdiv").offsetWidth) {
         px = opx = 0; //-speed;
         teleCtx.clearRect(px, 0, 10, h);
+        // Start a new subpath at the left edge, never connect across the strip.
+        teleCtx.moveTo(opx, opy);
       }
 
     }
@@ -2529,6 +2534,8 @@ function windowSizeChange() {
 
   //canvas.width = window.innerWidth;
   HRCanvas.width = window.innerWidth;
+  teleCtx.lineJoin = "round";
+  teleCtx.lineCap = "round";
   //ctx.width = window.innerWidth;
   //ctx1.width = window.innerWidth;
   //px = opx = 0;
