@@ -340,26 +340,26 @@
           <input hidden=true type="checkbox" id="capturing" value="capturing">
           <label hidden=true for="capturing"> capture override</label><br>
           <label for="pacingRate">pacing rate:</label>
-          <input id="pacingRate" value=60 size="2" type="number" min="0" max="1000">
+          <input id="pacingRate" value=60 size="2" type="number" min="30" max="200" step="1">
           <label for="AVInterval">pacer AV interval:</label>
-          <input id="AVInterval" value=170 size="2" type="number" min="20" max="300" onchange="onParameterChange()">
+          <input id="AVInterval" value=170 size="2" type="number" min="20" max="300" step="10" onchange="onParameterChange()">
           <label for="AVIntervalHRAdjustBox">auto AV interval (rate controlled)</label>
           <input id="AVIntervalHRAdjustBox" type="checkbox" checked=true>
     
           <br>
           <label for="aOutputBox">atrial output:</label>
-          <input id="aOutputBox" size="1" value=10 type="number" min="0" max="1000" onChange="onOutputChange('atrium')">mA
+          <input id="aOutputBox" size="1" value=10 type="number" min="0" max="20" step="0.1" onChange="onOutputChange('atrium')">mA
           <label for="aSensitivityBox">sensitivity:</label><input id="aSensitivityBox" type="number" value=4 size="2"
-            min="0.4" max="10" step="0.2" onChange="onParameterChange()">mV
+            min="0.4" max="10" step="0.1" onChange="onParameterChange()">mV
           <br>
           <label for="vOutputBox">ventricle output:</label>
-          <input id="vOutputBox" size="1" value=10 type="number" min="0" max="1000"
+          <input id="vOutputBox" size="1" value=10 type="number" min="0" max="25" step="0.1"
             onChange="onOutputChange('ventricle')">mA <label for="vSensitivityBox">sensitivity:</label><input
             id="vSensitivityBox" type="number" value=4 size="2" min="0.8" max="20" step="0.2"
             onChange="onParameterChange()">mV
           <div id="URLdiv">
             <label for="URLbox">upper rate limit (DDD):</label>
-            <input id="URLbox" value=150 size="2" type="number" min="0" max="1000">
+            <input id="URLbox" value=150 size="2" type="number" min="80" max="230" step="1" onchange="onParameterChange()">
           </div>
     
           <!-- <input type="checkbox" id="CHBbox" value="CHBbox" onchange="clickCHB()">
