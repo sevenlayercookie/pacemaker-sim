@@ -3387,25 +3387,6 @@ function deliverRAP(event) {
 
 }
 
-var knobArray = []
-
-function saveKnobState(knob, rowID) {
-  if (knob.cumulativeDegrees != undefined) {
-    knobArray[rowID] = knob.cumulativeDegrees
-  }
-}
-
-function loadKnobState(rowID) {
-  if (knobArray[rowID] == undefined) {
-    return 1;
-  }
-  else {
-    document.getElementById("bottomKnobImg").cumulativeDegrees = knobArray[rowID]
-    return 0;
-  }
-
-}
-
 function getSelectableRows() {
   var selectableRowsArray = []
   if (currentBottomScreen == 'mainmenu') { var ancestor = document.getElementById('mainScreen'); }
@@ -3472,9 +3453,6 @@ function downArrowClick() {
   reassignRowNumbers()
   maxRowNumber = selectableRows.length - 1
 
-  if (currentBottomScreen == 'mainmenu') {
-    saveKnobState(document.getElementById("bottomKnobImg"), selectedRow.id)
-  }
 
   if (currentlySelectedRowNumber < maxRowNumber) {
     currentlySelectedRowNumber += 1;
@@ -3483,9 +3461,6 @@ function downArrowClick() {
     currentlySelectedRowNumber = 0;
   }
   drawBordersAndArrow()
-  if (currentBottomScreen == 'mainmenu') {
-    loadKnobState(selectedRow.id)
-  }
   //drawBordersAndArrow()
   getBottomDialParameters()
   // resetBottomKnob()
@@ -3502,9 +3477,6 @@ function upArrowClick() {
   reassignRowNumbers()
   maxRowNumber = selectableRows.length - 1
 
-  if (currentBottomScreen == 'mainmenu') {
-    saveKnobState(document.getElementById("bottomKnobImg"), selectedRow.id)
-  }
 
   if (currentlySelectedRowNumber > 0) {
     currentlySelectedRowNumber -= 1;
@@ -3513,9 +3485,6 @@ function upArrowClick() {
     currentlySelectedRowNumber = maxRowNumber
   }
   drawBordersAndArrow()
-  if (currentBottomScreen == 'mainmenu') {
-    loadKnobState(selectedRow.id)
-  }
   //drawBordersAndArrow()
   getBottomDialParameters()
   // resetBottomKnob()
@@ -3739,7 +3708,6 @@ function backClick() {
   drawMainMenu()
   getBottomDialParameters()
   updateAllGUIValues()
-  loadKnobState(selectedRow.id)
 }
 
 function drawMainMenu() {
@@ -3817,7 +3785,7 @@ function calcKnobParams(knobImage) {
 // Harrison Knob
 function knobClick(clickEvent) {
 
-  getBottomDialParameters()
+  getBottomDialParameters(true)
   var clickTarget = clickEvent.target
 
   document.getElementById('mainDiv').classList.add('grabbed')
@@ -4166,7 +4134,7 @@ document.getElementById('bottomKnobImg').addEventListener('mousedown', knobClick
 document.getElementById('bottomKnobImg').addEventListener('touchstart', knobClick);
 
 
-function getBottomDialParameters() {
+function getBottomDialParameters(startingDrag = false) {
   if (selectedOption == "AsenseRow") {
     var elem = document.getElementById('bottomKnobImg')
     elem.minValue = aPacerMaxSensitivity
@@ -4237,6 +4205,14 @@ function getBottomDialParameters() {
     elem.currentValue = RAPrate
     elem.maxLock = false;
     elem.minLock = false;
+  }
+  if (elem && (startingDrag || elem.parameterRow !== selectedOption)) {
+    // The current parameter is authoritative, not rotation saved for another row.
+    // Rebase only on selection/new grabs so rounded values (e.g. AV interval)
+    // can still accumulate small movements throughout a drag or key sequence.
+    const direction = elem.reverseKnob ? -1 : 1;
+    elem.cumulativeDegrees = (elem.currentValue - elem.startValue) / (direction * elem.turnFactor);
+    elem.parameterRow = selectedOption;
   }
 }
 getBottomDialParameters()
