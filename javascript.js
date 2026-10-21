@@ -320,9 +320,9 @@ function onload() {
   // --------------------- LOCAL DEFINITIONS ---------------------------------
   dataFeed.length = 1000;
   dataFeed.fill(0, 0, 1000);
-  document.getElementById("tele").width = window.innerWidth;
-  document.getElementById("HRLayer").width = window.innerWidth;
-  document.getElementById("caliperCanvas").width = window.innerWidth;
+  document.getElementById("tele").width = document.getElementById("canvasesdiv").clientWidth;
+  document.getElementById("HRLayer").width = document.getElementById("canvasesdiv").clientWidth;
+  document.getElementById("caliperCanvas").width = document.getElementById("canvasesdiv").clientWidth;
   PRInterval = parseInt(document.getElementById("PRbox").value)
   var w = tele.width,
 
@@ -2528,7 +2528,13 @@ function windowSizeChange() {
   // should probably change both canvas sizes (canvas, canvas1), clear both canvases, realign drawing point to left side of screen, and move HR indicator
 
   //canvas.width = window.innerWidth;
-  HRCanvas.width = window.innerWidth;
+  const monitorWidth = document.getElementById("canvasesdiv").clientWidth;
+  [teleCanvas, HRCanvas, document.getElementById("caliperCanvas")].forEach(canvas => {
+    if (canvas.width !== monitorWidth) canvas.width = monitorWidth;
+  });
+  // Changing a canvas's backing size resets its drawing state.
+  teleCtx.strokeStyle = "#00bd00";
+  teleCtx.lineWidth = 3;
   //ctx.width = window.innerWidth;
   //ctx1.width = window.innerWidth;
   //px = opx = 0;
@@ -4534,9 +4540,7 @@ function rescaleFonts ()
 */
 
 new ResizeObserver(rescaleFonts).observe(document.getElementById('pacemakerGraphic'))
-if (navigator.userAgent.includes("Safari")) {
-  new ResizeObserver(adjustPacemakerGraphic).observe(document.getElementById('right'))
-}
+new ResizeObserver(windowSizeChange).observe(document.getElementById('canvasesdiv'));
 let keyDown = false;
 
 document.onkeydown = function (e) {
@@ -4576,6 +4580,8 @@ function arrowClick(event) {
 }
 let wasDragged = true
 function drawCaliper(clickEvent) {
+  if (!clickEvent.isPrimary || clickEvent.button !== 0) return;
+  clickEvent.preventDefault();
 
   let clickTarget = document.getElementById('caliperCanvas')
   clickTarget.rect = clickTarget.getBoundingClientRect()
@@ -4583,8 +4589,15 @@ function drawCaliper(clickEvent) {
 
 
 
-  let fromX = clickEvent.pageX - clickTarget.rect.left
-  let fromY = clickEvent.pageY - clickTarget.rect.top
+  clickTarget.setPointerCapture(clickEvent.pointerId);
+  function localPoint(event) {
+    const rect = clickTarget.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(clickTarget.width, (event.clientX - rect.left) * clickTarget.width / rect.width)),
+      y: Math.max(0, Math.min(clickTarget.height, (event.clientY - rect.top) * clickTarget.height / rect.height))
+    };
+  }
+  let { x: fromX, y: fromY } = localPoint(clickEvent);
 
   let startingY = fromY
   let startingX = fromX
@@ -4616,16 +4629,16 @@ function drawCaliper(clickEvent) {
 
   function drawVerticalLine(posX) {
     caliperCtx.moveTo(posX, 0)
-    caliperCtx.lineTo(posX, clickTarget.rect.bottom)
+    caliperCtx.lineTo(posX, clickTarget.height)
     caliperCtx.stroke();
   }
 
   function mousemove(dragEvent) {
+    if (dragEvent.pointerId !== clickEvent.pointerId) return;
     wasDragged = true
     clearCaliper()
     drawVerticalLine(startingX)
-    toX = dragEvent.pageX - clickTarget.rect.left
-    toY = dragEvent.pageY - clickTarget.rect.top
+    const { x: toX, y: toY } = localPoint(dragEvent);
     caliperCtx.moveTo(startingX, toY)
     caliperCtx.lineTo(toX, toY)
     caliperCtx.stroke()
@@ -4660,13 +4673,19 @@ function drawCaliper(clickEvent) {
   }
 
   function endClick(touchevent) {
-    document.getElementById('caliperCanvas').removeEventListener('mousemove', mousemove)
-    document.getElementById('caliperCanvas').removeEventListener('mouseup', endClick)
+    if (touchevent.pointerId !== clickEvent.pointerId) return;
+    clickTarget.removeEventListener('pointermove', mousemove);
+    clickTarget.removeEventListener('pointerup', endClick);
+    clickTarget.removeEventListener('pointercancel', endClick);
+    clickTarget.removeEventListener('lostpointercapture', endClick);
+    if (clickTarget.hasPointerCapture(clickEvent.pointerId)) clickTarget.releasePointerCapture(clickEvent.pointerId);
   }
 
-  document.getElementById('caliperCanvas').addEventListener('mousemove', mousemove)
-  document.getElementById('caliperCanvas').addEventListener('mouseup', endClick)
+  clickTarget.addEventListener('pointermove', mousemove);
+  clickTarget.addEventListener('pointerup', endClick);
+  clickTarget.addEventListener('pointercancel', endClick);
+  clickTarget.addEventListener('lostpointercapture', endClick);
 
 }
 
-document.getElementById('caliperCanvas').addEventListener('mousedown', drawCaliper)
+document.getElementById('caliperCanvas').addEventListener('pointerdown', drawCaliper)

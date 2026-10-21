@@ -5,6 +5,15 @@
   cursor:crosshair;
 }
 
+/* Workspace shell. Device internals retain their proportional geometry. */
+html { background: #f1f5f4; color: #203c39; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { margin: 0; padding-top: 24px; }
+.panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 24px; }
+h2 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.4px; }
+.device-help { color: #72857f; font-size: 12px; line-height: 1.6; margin: -8px 24px 24px; }
+.monitor-footer { display: flex; justify-content: space-between; gap: 12px; padding: 17px 24px; font-size: 11px; color: #91aaa1; border-top: 1px solid #28453c; }
+.unit { color: #81938d; font-weight: 400; float: right; }
+
 .rightSideCanvas {
 background: #fff;
 cursor:crosshair;
@@ -63,6 +72,7 @@ cursor:crosshair;
  /* Pacer Box */
 
  .pacemakerGraphic {
+  font-family: initial;
   /*
   height: 68vmin;
   width: 29vmin;
@@ -485,52 +495,60 @@ color:#fff
   justify-content: space-between;
 }
 
-/* Media queries */
+/* Responsive workspace */
+.mainDiv { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; max-width: 1320px; padding: 0 24px 40px; margin: 0 auto; height: auto; align-items: start; }
+.split { position: static; width: auto; height: auto; overflow: visible; min-width: 0; }
+.left { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 24px; }
+.right { grid-column: 2; grid-row: 1; background: #fff; border: 1px solid #dce5e2; border-radius: 18px; padding-bottom: 28px; }
+.telemetry-panel { background: #10281f; border: 1px solid #203e32; border-radius: 18px; overflow: hidden; color: #eff9f4; }
+.settings-panel { background: white; border: 1px solid #dce5e2; border-radius: 18px; padding: 0 24px 24px; display: flex; flex-direction: column; }
+.settings-panel > .panel-heading { padding: 24px 0; order: -3; }
+.rhythmStuff { order: -2; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+.rhythmStuff > label, .rhythmStuff > select, .rhythmStuff > div:not(#nativeRate):not(#nativePR) { grid-column: 1 / -1; }
+.rhythmStuff br { display: none; }
+.rhythmStuff > div { min-width: 0; }
+.rhythmStuff > div[hidden] { display: none; }
+.settings-panel label { font-size: 12px; font-weight: 600; color: #536e66; }
+.rhythmStuff > div > label, .feedback-setting > label { display: block; margin: 10px 0; }
+.settings-panel select, .settings-panel input[type="number"] { box-sizing: border-box; width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid #d8e2dd; border-radius: 9px; background: #f8faf9; color: #203c39; font: inherit; font-size: 14px; }
+.settings-panel select { text-overflow: ellipsis; }
+.feedback-setting { margin-top: 18px; padding-top: 8px; border-top: 1px solid #e7ede9; }
+.checkboxStuff { align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.checkboxStuff > div:first-child { display: flex; align-items: center; gap: 6px; min-height: 44px; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: #14796c; }
+#scrambleThresholds { min-height: 44px; padding: 10px 16px; border: 1px solid #bcd8ce; border-radius: 9px; background: #eaf5f0; color: #166b56; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+#scrambleThresholds:hover { background: #d9eee4; }
+:focus-visible { outline: 3px solid #27a991; outline-offset: 3px; }
+#feedbackBox:not(:empty) { margin-top: 20px; padding: 16px; border-radius: 10px; background: #f2f6f3; font-size: 13px; line-height: 1.6; }
+#canvasesdiv { overflow: hidden; background: #000; }
+#canvasesdiv canvas { position: absolute; left: 0; top: 0; }
+#HRLayer, #caliperCanvas { background: transparent; }
+#caliperCanvas { z-index: 4; touch-action: none; }
+.pacemakerGraphic { box-sizing: border-box; width: 290px; height: 677px; max-height: none; margin: 0 auto; padding: 0; aspect-ratio: 3 / 7; }
+.wholeBox { box-sizing: border-box; height: 100%; border-radius: 28px; padding-top: 3%; background: linear-gradient(120deg, #455746, #293c30); box-shadow: inset 0 1px 2px #81917e, 0 12px 24px #203c3926; }
+.topScreen, .bottomScreen { overflow: hidden; box-shadow: 0 0 0 3px #243426; }
+.topHalf > .topScreen, .bottomHalf > .bottomScreen { width: 66%; }
+.topRightSide, .bottomKnobs {
+  box-sizing: border-box;
+  width: 34%;
+  padding-inline: 2.5%;
+}
+.knobImg { width: 100%; cursor: grab; }
+.bottomScreenHide { height: 100%; }
+.modeRadio img { display: block; width: 100%; }
 
-/* small screens */
-@media screen and (max-width: 480px) {
-  .mainDiv {
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: center;
-    justify-content: space-between;
-    height: auto;
-    width: 100%;
-  }
-  .split {
-    position: relative;
-  }
-  .textBoxes {
-    display:none;
-  }
-  .right {
-    display: flex;
-    justify-content: center;
-    padding-right: 1%;
-    /* height: 100%; */
-    /* min-height: 600px; */
-    width: 100%;
-    height: 60%;
-    -webkit-touch-callout: none;
-    min-height: 1vh;
-    resize:both;
-    overflow: hidden;
-  }
-  .left {
-    width:100%
-  }
-  .pacemakerGraphic {
-    /*
-    height: min(65vh,95%);
-    width: 30vh;
-    */
-    aspect-ratio: 3/7;
-    height: 100%;
-    font-size: 1em;
-   }
-   .wholeBox  {
-    border-radius: min(3vh, 30px);
-   }
-
-
+@media (max-width: 1000px) {
+  .mainDiv { grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; }
+  .panel-heading { padding: 20px; }
+}
+@media (max-width: 760px) {
+  .mainDiv { display: flex; flex-direction: column; padding: 0 16px 28px; gap: 20px; }
+  .left, .right { width: 100%; box-sizing: border-box; }
+  .left { order: -1; gap: 20px; }
+  .right { scroll-margin-top: 20px; }
+  .settings-panel { padding: 0 20px 20px; }
+  .settings-panel select, .settings-panel input[type="number"] { font-size: 16px; }
+  .pacemakerGraphic { width: min(290px, calc(100% - 32px)); height: auto; }
+  .wholeBox { position: absolute; inset: 0; }
+  .monitor-footer { padding: 14px 20px; font-size: 10px; }
 }

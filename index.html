@@ -1,8 +1,12 @@
+<!doctype html>
+<html lang="en">
 <head>
+  <meta charset="utf-8">
+  <title>Pacemaker Simulator</title>
   
   
   <link rel="stylesheet" href="css.css" />
-  <meta name="viewport" content="width=device-width" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -16,6 +20,8 @@
 <body>
   <div class="mainDiv" id="mainDiv">
       <div class="split right" id="right">
+      <div class="panel-heading"><h2>Pacemaker</h2></div>
+      <p class="device-help">Drag the dials to adjust. Use the arrows and enter to navigate.</p>
     
       <div class="pacemakerGraphic" id="pacemakerGraphic">
         <div class="wholeBox">
@@ -296,8 +302,18 @@
         </div>
       </div>
     </div>
-  </div>
     <div class="split left">
+      <section class="telemetry-panel" aria-labelledby="telemetry-title">
+        <div class="panel-heading"><h2 id="telemetry-title">Telemetry</h2></div>
+        <div id="canvasesdiv" style="position:relative; width:100%; height:200px">
+          <canvas class="leftSideCanvas" id="tele" height="200" aria-label="Live ECG waveform"></canvas>
+          <canvas class="leftSideCanvas" id="HRLayer" height="200" aria-label="Heart rate"></canvas>
+          <canvas class="leftSideCanvas" id="caliperCanvas" height="200" aria-label="ECG measurement calipers"></canvas>
+        </div>
+        <div class="monitor-footer"><span>ECG · Continuous trace</span><span>Drag on the trace to measure</span></div>
+      </section>
+      <section class="settings-panel" aria-labelledby="settings-title">
+      <div class="panel-heading"><h2 id="settings-title">Patient settings</h2></div>
       <div class="textBoxes">
         
           
@@ -352,18 +368,19 @@
     
         
       </div>
-      <label for="feedbackList">Feedback:</label>
+      <div class="feedback-setting"><label for="feedbackList">Training feedback</label>
       <select id="feedbackList" title="Select the level of feedback you want">
         <option value="noFeedback">No feedback</option>
         <option value="lowFeedback" selected>Low feedback</option>
         <option value="medFeedback">Medium feedback</option>
         <option value="highFeedback">High feedback</option>
       </select>
+      </div>
       
       <div class="rhythmStuff">
         
           
-        <label for="rhythmList">Rhythm:</label>
+        <label for="rhythmList">Intrinsic rhythm</label>
         <select id="rhythmList" title="Select the patient's intrinsic rhythm">
           <option value="NSR">Sinus rhythm</option>
           <option value="flatline">Flatline</option>
@@ -382,13 +399,13 @@
         </select>
         <br>
         <div id="nativeRate">
-          <label for="avgRateBox">native rate:</label> <input type="number" id="avgRateBox" title="Select the patient's intrinsic rate" value=60 size="2" max="1000"
+          <label for="avgRateBox">Native rate <span class="unit">bpm</span></label> <input type="number" id="avgRateBox" title="Select the patient's intrinsic rate" value=60 size="2" max="1000"
             min="0">
             <br>
 
         </div>
         <div id="nativePR">
-          <label for="PRbox">native PR interval</label> <input type="number" id="PRbox" title="Select the patient's native PR interval" value=150 size="2" max="1000"
+          <label for="PRbox">PR interval <span class="unit">ms</span></label> <input type="number" id="PRbox" title="Select the patient's native PR interval" value=150 size="2" max="1000"
           min="0">
           <br>
         </div>
@@ -438,25 +455,17 @@
       <div class="checkboxStuff">
         <div>
         <input type="checkbox" id="noise" value="noise" title="Check to simulate realistic telemetry noise" onclick="noiseToggle()">
-        <label for="noise"> noise</label>
+        <label for="noise">Telemetry noise</label>
         </div>
         <div class="scrambleStuff">
-          <input type="button" id="scrambleThresholds" value="SCRAMBLE THRESHOLDS" title="Click this button to scramble thresholds -- you'll need to reoptimize pacer settings after this is pressed" onclick="scrambleThresholds()">
+          <input type="button" id="scrambleThresholds" value="Scramble thresholds ↗" title="Click this button to scramble thresholds -- you'll need to reoptimize pacer settings after this is pressed" onclick="scrambleThresholds()">
         </div>
       </div>
     
     
-      <div id="feedbackBox"></div>
+      <div id="feedbackBox" aria-live="polite"></div>
+      </section>
     
-      <div id="canvasesdiv" style="position:relative; width:100%; height:200px">
-        <canvas class="leftSideCanvas" id="tele" style="position:absolute; left:0px; top:0px;" width=100%
-          height=200px></canvas>
-        <canvas class="leftSideCanvas" id="HRLayer"
-          style="position:absolute; left:0px; top:0px; background-color: transparent;" width=100% height="200"></canvas>
-        <canvas class="leftSideCanvas" id="caliperCanvas"
-          style="position:absolute; left:0px; top:0px; background-color: transparent; z-index: 4;" width=100%
-          height="200"></canvas>
-      </div>
     
     
     </div>
@@ -467,3 +476,4 @@
     <script type="text/javascript" src="pure-knob-master/pureknob.js"></script>
     <script type="text/javascript" src="javascript.js"></script>
 </body>
+</html>
